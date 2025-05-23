@@ -54,7 +54,7 @@ if user_input := st.chat_input("Escribe algo o sube un PDF…", accept_file=True
         retrieved_docs = retrieve(user_input.text, k=3)
         context_blocks = []
         
-        st.write(retrieved_docs)
+        # st.write(retrieved_docs)
         
         for doc in retrieved_docs:
             src = doc.metadata.get("source", "desconocido")
@@ -76,7 +76,7 @@ if user_input := st.chat_input("Escribe algo o sube un PDF…", accept_file=True
             role = "user" if m["role"] == "user" else "ai"
             llm_messages.append({"role": role, "content": m["content"]})
             
-        st.write(llm_messages)
+        # st.write(llm_messages)
         
         try:
             with st.spinner("🧠 El modelo está pensando..."):
