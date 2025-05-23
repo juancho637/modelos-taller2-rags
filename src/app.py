@@ -3,13 +3,15 @@ from dotenv import load_dotenv
 import ollama
 import streamlit as st
 from langchain_ollama import ChatOllama
-from rag import load_pdf, retrieve, strip_think_blocks
+from rag import auto_load_data_pdfs, retrieve, strip_think_blocks
 
 def main():
     load_dotenv()
     os.environ["LANGSMITH_TRACING"] = os.getenv("LANGSMITH_TRACING", "True")
     os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY", "")
     os.environ["USER_AGENT"] = os.getenv("USER_AGENT", "")
+    
+    auto_load_data_pdfs(pdf_dir="./data", pdf_names=["colombia1.pdf"])
 
     st.title('📚 Historia de Colombia + contitución')
     
@@ -39,16 +41,22 @@ def main():
             st.write(msg["content"])
 
     if user_input := st.chat_input("Escribe algo o sube un PDF…", accept_file=True, file_type=["pdf"]):
-        if user_input.files:
-            pages, chunks = load_pdf(user_input.files[0])
-            st.chat_message("assistant").write(
-                f"✅ PDF indexado: {pages} páginas, {chunks} fragmentos."
-            )
-
         if user_input.text.strip():
             st.session_state.messages.append({"role": "user", "content": user_input.text})
             st.chat_message("user").write(user_input.text)
             
+            retrieved_docs = retrieve(user_input.text)
+            context_blocks = []
+            
+            st.write(retrieved_docs)
+            
+            for doc in retrieved_docs:
+                src = doc.metadata.get("source", "desconocido")
+                text = doc.page_content
+                context_blocks.append(f"[{src}]\n{text}")
+                
+            context_payload = "\n\n---\n\n".join(context_blocks)
+                        
             system_prompt = {
                 "role": "system",
                 "content": (
@@ -56,17 +64,23 @@ def main():
                     "Responde solo en texto plano, sin markdown."
                 )
             }
+            
             llm_messages = [system_prompt]
+            
+            if context_payload:
+                llm_messages.append({
+                    "role": "system",
+                    "content": f"Información relevante extraída:\n\n{context_payload}"
+                })
             
             for m in st.session_state.messages:
                 role = "user" if m["role"] == "user" else "ai"
                 llm_messages.append({"role": role, "content": m["content"]})
-            
             try:
                 with st.spinner("🧠 El modelo está pensando..."):
-                    # context = retrieve(user_input.text)
                     response = llm.invoke(llm_messages)
                     clean = strip_think_blocks(response.content)
+                    
                     st.session_state.messages.append({"role": "assistant", "content": clean})
                     st.chat_message("assistant").write(clean)
             except Exception as e:
