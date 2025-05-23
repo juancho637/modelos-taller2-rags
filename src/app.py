@@ -30,6 +30,13 @@ def main():
         top_p=st.session_state.top_p,
         top_k=st.session_state.top_k,
     )
+    
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+        
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.write(msg["content"])
 
     if user_input := st.chat_input("Escribe algo o sube un PDF…", accept_file=True, file_type=["pdf"]):
         if user_input.files:
@@ -39,22 +46,28 @@ def main():
             )
 
         if user_input.text.strip():
+            st.session_state.messages.append({"role": "user", "content": user_input.text})
             st.chat_message("user").write(user_input.text)
+            
+            system_prompt = {
+                "role": "system",
+                "content": (
+                    "Eres un experto en la información proporcionada por RAG. "
+                    "Responde solo en texto plano, sin markdown."
+                )
+            }
+            llm_messages = [system_prompt]
+            
+            for m in st.session_state.messages:
+                role = "user" if m["role"] == "user" else "ai"
+                llm_messages.append({"role": role, "content": m["content"]})
+            
             try:
                 with st.spinner("🧠 El modelo está pensando..."):
-                    context = retrieve(user_input.text)
-                    response = llm.invoke([
-                        {
-                            "role": "system",
-                            "content": (
-                                "Eres un experto en la información proporcionada por RAG. "
-                                "Responde solo en texto plano, sin markdown."
-                            )
-                        },
-                        {"role": "ai",   "content": context},
-                        {"role": "user", "content": user_input.text}
-                    ])
+                    # context = retrieve(user_input.text)
+                    response = llm.invoke(llm_messages)
                     clean = strip_think_blocks(response.content)
+                    st.session_state.messages.append({"role": "assistant", "content": clean})
                     st.chat_message("assistant").write(clean)
             except Exception as e:
                 st.error(f"Error: {e}")
