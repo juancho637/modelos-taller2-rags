@@ -7,6 +7,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
+import json
 
 embeddings = OllamaEmbeddings(model="nomic-embed-text:latest")
 persist_directory = "./chroma_langchain_db"
@@ -24,7 +25,20 @@ def auto_load_data_pdfs(
     Al iniciar el proyecto, indexa en Chroma los PDFs listados en pdf_names
     (ubicados en pdf_dir) sólo si todavía no hay nada en la base de datos.
     """
+    marker_file = os.path.join(persist_directory, "loaded_pdfs.json")
+    
+    try:
+        with open(marker_file, 'r') as f:
+            loaded = json.load(f)
+    except Exception:
+        loaded = []
+
+    updated = False
+    
     for pdf_fname in pdf_names:
+        if pdf_fname in loaded:
+            print(f"✓ {pdf_fname} ya indexado, se omite")
+            continue
         pdf_path = os.path.join(pdf_dir, pdf_fname)
         if not os.path.isfile(pdf_path):
             continue
@@ -39,7 +53,21 @@ def auto_load_data_pdfs(
 
         vector_store.add_documents(chunks)
         print(f"✓ Indexado {pdf_fname}: {len(docs)} páginas, {len(chunks)} fragmentos")
+        loaded.append(pdf_fname)
+        updated = True
 
+    if updated:
+        os.makedirs(persist_directory, exist_ok=True)
+        with open(marker_file, 'w') as f:
+            json.dump(loaded, f)
+            
+        if hasattr(vector_store, 'persist'):
+            vector_store.persist()
+        else:
+            client = getattr(vector_store, '_client', None)
+            
+            if client and hasattr(client, 'persist'):
+                client.persist()
 
     print(f"Finalizó indexado de pdf's")
 
