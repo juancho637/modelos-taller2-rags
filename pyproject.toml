@@ -1,0 +1,19 @@
+[project]
+name = "taller2-rags"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "chromadb>=1.0.10",
+    "dotenv>=0.9.9",
+    "langchain>=0.3.25",
+    "langchain-chroma>=0.2.4",
+    "langchain-community>=0.3.24",
+    "langchain-ollama>=0.3.3",
+    "langgraph>=0.4.5",
+    "ollama>=0.4.8",
+    "pypdf>=5.5.0",
+    "streamlit>=1.45.1",
+    "watchdog>=6.0.0",
+]
