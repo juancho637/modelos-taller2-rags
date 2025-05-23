@@ -17,7 +17,7 @@ os.environ["LANGSMITH_TRACING"] = os.getenv("LANGSMITH_TRACING", "True")
 os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY", "")
 os.environ["USER_AGENT"] = os.getenv("USER_AGENT", "")
 
-auto_load_data_pdfs(pdf_dir="./data", pdf_names=["colombia1.pdf", "colombia2.pdf"])
+auto_load_data_pdfs(pdf_dir="./data", pdf_names=["constitucion.pdf", "historia.pdf"])
 
 st.title('📚 Historia de Colombia + contitución')
 
@@ -46,15 +46,15 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-if user_input := st.chat_input("Escribe algo o sube un PDF…", accept_file=True, file_type=["pdf"]):
-    if user_input.text.strip():
-        st.session_state.messages.append({"role": "user", "content": user_input.text})
-        st.chat_message("user").write(user_input.text)
+if user_input := st.chat_input("Escribe algo…"):
+    if user_input.strip():
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        st.chat_message("user").write(user_input)
         
-        retrieved_docs = retrieve(user_input.text, k=3)
+        retrieved_docs = retrieve(user_input, k=3)
         context_blocks = []
         
-        # st.write(retrieved_docs)
+        print(retrieved_docs)
         
         for doc in retrieved_docs:
             src = doc.metadata.get("source", "desconocido")
@@ -85,7 +85,7 @@ if user_input := st.chat_input("Escribe algo o sube un PDF…", accept_file=True
                 
                 st.session_state.messages.append({"role": "assistant", "content": clean})
                 
-                st.write(st.session_state.messages)
+                # st.write(st.session_state.messages)
                 
                 st.chat_message("assistant").write(clean)
         except Exception as e:
