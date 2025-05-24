@@ -115,11 +115,18 @@ USER_AGENT=<tu_user_agent>
 
 ## 💬 Ejemplos de preguntas
 
-Después de indexar `constitucion.pdf` e `historia.pdf`, prueba preguntas como:
+**Preguntas para `historia.pdf`**
 
-* ¿Cuál es la fecha de promulgación de la Constitución de 1991?
-* ¿Qué derechos fundamentales aparecen en el Capítulo I de la Constitución?
-* ¿Quiénes fueron los protagonistas del proceso independentista descrito en historia.pdf?
-* ¿Qué eventos clave se mencionan para el año 1810?
+1. ¿Qué acontecimientos clave se describen en el capítulo 1 sobre la formación de las juntas de 1810 y cómo contribuyeron al proceso de independencia?
+2. ¿Cuáles son los principales conflictos políticos y sociales analizados en el capítulo 5, “El conflicto”, y cómo evolucionaron desde el siglo XIX hasta la narco-violencia de finales del siglo XX?
+3. Según el capítulo 7, “Un espacio común”, ¿qué desarrollos en transporte y comunicaciones permitieron la integración física y cultural de las distintas regiones de Colombia?
+
+
+**Preguntas para `constitucion.pdf`**
+
+1. ¿Cuáles son los fines esenciales del Estado según el artículo 2 de la Constitución Política de Colombia de 1991?
+2. ¿Qué derechos fundamentales consagra la Constitución en los artículos 11 y 12 relacionados con la inviolabilidad de la vida y la prohibición de tratos crueles?
+3. Según el artículo 7, ¿cómo reconoce y protege la Constitución la diversidad étnica y cultural de la Nación?
+
 
 ¡Listo! Ahora puedes levantar tu chatbot RAG y explorar documentos PDF de forma interactiva.
