@@ -3,7 +3,9 @@ from dotenv import load_dotenv
 import ollama
 import streamlit as st
 from langchain_ollama import ChatOllama
-from rag import auto_load_data_pdfs, retrieve, strip_think_blocks
+from langchain_core.messages import HumanMessage, AIMessage
+from rag import auto_load_data_pdfs, strip_think_blocks
+from graph import build_graph
 
 load_dotenv()
 
@@ -19,7 +21,7 @@ os.environ["USER_AGENT"] = os.getenv("USER_AGENT", "")
 
 auto_load_data_pdfs(pdf_dir="./data", pdf_names=["constitucion.pdf", "historia.pdf"])
 
-st.title('📚 Historia de Colombia + contitución')
+st.title('📚 Historia de Colombia + constitución del 91')
 
 lista = list_models()
 
@@ -46,47 +48,30 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
+graph = build_graph(llm)
+
 if user_input := st.chat_input("Escribe algo…"):
-    if user_input.strip():
+    input_strip = user_input.strip()
+    if input_strip:
         st.session_state.messages.append({"role": "user", "content": user_input})
         st.chat_message("user").write(user_input)
         
-        retrieved_docs = retrieve(user_input, k=3)
-        context_blocks = []
-        
-        print(retrieved_docs)
-        
-        for doc in retrieved_docs:
-            src = doc.metadata.get("source", "desconocido")
-            text = doc.page_content
-            context_blocks.append(f"[{src}]\n{text}")
-            
-        context_payload = "\n\n---\n\n".join(context_blocks)
-                    
-        system_prompt = {
-            "role": "system",
-            "content": (
-                f"Eres un experto en la información proporcionada por RAG, solo vas a responder segun el contexto dada por la siguente respuesta: \n{context_payload if context_payload else "No se encontro información relacionada a la pregunta"} \n\nsi no te llega información vas a contestar de una forma cortez que no tienes información relacionada a la pregunta. Responde solo en texto plano, sin markdown."
-            )
-        }
-        
-        llm_messages = [system_prompt]
-        
+        state_msgs = []
         for m in st.session_state.messages:
-            role = "user" if m["role"] == "user" else "ai"
-            llm_messages.append({"role": role, "content": m["content"]})
-            
-        # st.write(llm_messages)
-        
+            if m["role"] == "user":
+                state_msgs.append(HumanMessage(m["content"]))
+            else:
+                state_msgs.append(AIMessage(m["content"]))
+                
         try:
             with st.spinner("🧠 El modelo está pensando..."):
-                response = llm.invoke(llm_messages)
-                clean = strip_think_blocks(response.content)
-                
-                st.session_state.messages.append({"role": "assistant", "content": clean})
-                
-                # st.write(st.session_state.messages)
-                
-                st.chat_message("assistant").write(clean)
+                # initial_state = {"messages": [{"role": "user", "content": input_strip}]}
+                result = graph.compile().invoke({"messages": state_msgs})
+                final_msg = result["messages"][-1]
+
+                clean_answer = strip_think_blocks(final_msg.content)
+                st.session_state.messages.append({"role": "assistant", "content": clean_answer})
+                                
+                st.chat_message("assistant").write(clean_answer)
         except Exception as e:
             st.error(f"Error: {e}")

@@ -1,4 +1,3 @@
-
 import os
 import re
 from typing import List
@@ -8,6 +7,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
 import json
+from langchain_core.tools import tool
 
 embeddings = OllamaEmbeddings(model="nomic-embed-text:latest")
 persist_directory = "./chroma_langchain_db"
@@ -16,6 +16,19 @@ vector_store = Chroma(
     embedding_function=embeddings,
     persist_directory=persist_directory,
 )
+
+@tool(response_format="content_and_artifact")
+def retrieve_tool(query: str):
+    """
+        Herramienta para recuperar los k=2 fragmentos más relevantes.
+        Devuelve tanto la lista de Document como un string serializado.
+    """
+    retrieved_docs = vector_store.similarity_search(query, k=5)
+    serialized = "\n\n".join(
+        (f"Source: {doc.metadata}\n" f"Content: {doc.page_content}")
+        for doc in retrieved_docs
+    )
+    return serialized, retrieved_docs
 
 def auto_load_data_pdfs(
     pdf_dir: str = "./data",
@@ -45,7 +58,7 @@ def auto_load_data_pdfs(
 
         loader = PyPDFLoader(pdf_path)
         docs = loader.load()
-        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=250)
         chunks = splitter.split_documents(docs)
 
         for chunk in chunks:
@@ -70,13 +83,6 @@ def auto_load_data_pdfs(
                 client.persist()
 
     print(f"Finalizó indexado de pdf's")
-
-def retrieve(query: str, k: int = 2) -> List[Document]:
-    """
-    Realiza una búsqueda semántica en el índice y devuelve
-    los fragmentos encontrados serializados en un string.
-    """
-    return vector_store.similarity_search(query, k=k)
 
 def strip_think_blocks(text: str) -> str:
     """
